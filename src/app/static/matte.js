@@ -81,19 +81,30 @@ Vue.component('train', {
         document.getElementById('bgrTxt').textContent="Background image: "+file.name+" ("+file.size+")";
 
     },
+    handleEvent(message) {
+        console.log(message.data);
+        document.getElementById('logTxt').textContent = message.data;
+    },
     submitFiles() {
+        this.ws = new WebSocket("ws://"+window.location.host+"/ws");
+        this.ws.onmessage = this.handleEvent;
+
         let formData = new FormData();
 
         formData.append('src', this.$refs.src.files[0]);
         formData.append('bgr', this.$refs.bgr.files[0]);
 
-        axios.post('/api/matte/111', formData, {
+        axios.post('/api/matte', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
+            responseType: 'arraybuffer'
           }
-        ).then(function(){
-        })
+        ).then(response => {
+            var blob=new Blob([response.data])
+            console.log(blob);
+            saveAs(blob,'output.mp4');
+	    })
         .catch(function(){
         });
     }
@@ -168,6 +179,9 @@ Vue.component('train', {
             <br/>
 
             <input class="btn" type="submit" v-on:click="submitFiles" >
+            <br/>
+            <br/>
+            <div id="logTxt" class="upload-btn-wrapper"></div>
         </div>
     </div>
     </div>

@@ -4,6 +4,7 @@ __pycache__
 *.mp4
 *.MP4
 *.pth
+*.mp3
 rembg/
 demo/
 *BackgroundMattingV2/

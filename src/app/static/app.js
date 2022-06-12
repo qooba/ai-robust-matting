@@ -12,7 +12,5 @@ app=new Vue({
     }
   },
   created: function () {
-    this.ws = new WebSocket("wss://"+window.location.host+"/ws");
-    this.ws.onmessage = this.handleEvent;
   }
 });

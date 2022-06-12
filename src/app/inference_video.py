@@ -87,7 +87,7 @@ class ImageSequenceWriter:
 
 class VideoMatteService:
 
-    def process(self, video_src: str, video_bgr: str, device: str = 'cuda'):
+    def process(self, video_src: str, video_bgr: str, output_dir: str, device: str = 'cuda'):
 
         args = Args(
             model_type="mattingrefine",                         # 'mattingbase', 'mattingrefine'
@@ -104,7 +104,7 @@ class VideoMatteService:
             video_resize=None,                                  # None
             device=device,                                      # 'cpu', 'cuda'
             preprocess_alignment=False,
-            output_dir="/app/output/",
+            output_dir=output_dir,
             output_types=['com', 'pha', 'fgr', 'err', 'ref'],   # ['com', 'pha', 'fgr', 'err', 'ref']
             output_format="video"                               # 'video', 'image_sequences'
         )
