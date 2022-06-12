@@ -15,9 +15,10 @@ Vue.component("dropzone",{
   },
   mounted(){
     this.uploadDropzone= new Dropzone(this.$el, {
-        url:"/api/scissors/"+this.modelName, 
-        paramName: "file",
+        url:"/api/matte/"+this.modelName, 
+        paramName: "files",
         method: "post",
+        uploadMultiple: true,
         timeout: 36000000,
         responseType: 'arraybuffer',
         success: function(file, response){
@@ -70,6 +71,31 @@ Vue.component('train', {
             console.log(blob);
             saveAs(blob,'trt_graph.pb');
 	    });
+    },
+    srcChanged(event){
+        var file = event.target.files[0]
+        document.getElementById('srcTxt').textContent="Source video: "+file.name+" ("+file.size+")";
+    },
+    bgrChanged(event){
+        var file = event.target.files[0]
+        document.getElementById('bgrTxt').textContent="Background image: "+file.name+" ("+file.size+")";
+
+    },
+    submitFiles() {
+        let formData = new FormData();
+
+        formData.append('src', this.$refs.src.files[0]);
+        formData.append('bgr', this.$refs.bgr.files[0]);
+
+        axios.post('/api/matte/111', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+          }
+        ).then(function(){
+        })
+        .catch(function(){
+        });
     }
   },
   created(){
@@ -121,10 +147,27 @@ Vue.component('train', {
 
 
         <div class="mdl-card__actions mdl-card--border">
-            <dropzone :current-project="currentProject" ref="dropzone"></dropzone>
+            <!-- <dropzone :current-project="currentProject" ref="dropzone"></dropzone> -->
             <br/>
-            <img id="input" width="49%" />
-            <img id="output" width="49%" />
+            <div class="upload-btn-wrapper">
+                <button class="btn">Upload source</button>
+                <input type="file" ref="src" @change="srcChanged" name="myfile" />
+            </div>
+            <div class="upload-btn-wrapper">
+                <button class="btn">Upload background</button>
+                <input type="file" ref="bgr" @change="bgrChanged" name="myfile" />
+            </div>
+            <br/>
+            <br/>
+
+            <div id="srcTxt" class="upload-btn-wrapper">Sorce video:</div>
+            <br/>
+            <div id="bgrTxt" class="upload-btn-wrapper">Background image:</div>
+            
+            <br/>
+            <br/>
+
+            <input class="btn" type="submit" v-on:click="submitFiles" >
         </div>
     </div>
     </div>

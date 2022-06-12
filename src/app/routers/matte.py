@@ -1,56 +1,43 @@
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, UploadFile, Request
 from common import Injects
-from services.matte import ImagesService
 from starlette.responses import StreamingResponse
-
+from inference_video import VideoMatteService
 import io
-
-import numpy as np
-from PIL import Image
-
-from rembg.u2net import detect
-
-model_u2net = detect.load_model(model_name="u2net")
-model_u2netp = detect.load_model(model_name="u2netp")
-
-
-def remove(data, model_name="u2net"):
-    model = model_u2net
-
-    if model == "u2netp":
-        model = model_u2netp
-
-    img = Image.open(io.BytesIO(data))
-    roi = detect.predict(model, np.array(img))
-    roi = roi.resize((img.size), resample=Image.LANCZOS)
-
-    empty = Image.new("RGBA", (img.size), 0)
-    out = Image.composite(img, empty, roi.convert("L"))
-
-    bio = io.BytesIO()
-    out.save(bio, "PNG")
-
-    return bio.getbuffer()
-
-
-
+from typing import List
+import logging
 router = APIRouter()
 
+logger = logging.getLogger("mycoolapp")
+
 @router.get("/api/matte")
-async def root(image_service: ImagesService = Injects(ImagesService)):
-    return {"message": image_service.process()}
-
-
-@router.post("/api/files")
-async def create_file(file: bytes = File(...)):
-    return {"file_size": len(file)}
-
+async def root(matte_service: VideoMatteService = Injects(VideoMatteService)):
+    video_src="/app/src.mp4"
+    video_bgr="/app/bgr1.png"
+    matte_service.process(video_src, video_bgr)
+    return {"message": "ok"}
 
 @router.post("/api/matte/{file_name}")
-async def create_upload_file(file_name, file: UploadFile = File(...)):
-    print(file)
-    print(file_name)
-    print(file.filename)
-    file_data=await file.read()
-    file_processed=remove(file_data)
-    return StreamingResponse(io.BytesIO(file_processed), media_type="image/png")
+async def create_upload_file(file_name, request: Request, matte_service: VideoMatteService = Injects(VideoMatteService)):
+    #print(file)
+    #print(file_name)
+    #print(file.filename)
+    #file_data=await file.read()
+    #video_src=f'/tmp/{file_name}'
+    #with open(video_src, 'w') as f:
+    #    f.write(file_data)
+
+    #matte_service.process(video_src)
+    #print(src.filename)
+
+    form = await request.form()
+
+    src = form["src"]
+    print(src.filename)
+    src_data = await src.read()
+
+    bgr = form["bgr"]
+    print(bgr.filename)
+    bgr_data = await bgr.read()
+
+    #return StreamingResponse(io.BytesIO(file_processed), media_type="video/mp4")
+    return {"message": "OK"}
