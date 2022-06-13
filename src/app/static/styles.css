@@ -279,3 +279,5 @@ li.clickable:hover {
   top: 0;
   opacity: 0;
 }
+
+.mybtn { display: none }

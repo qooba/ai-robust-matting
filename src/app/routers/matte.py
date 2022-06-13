@@ -8,6 +8,7 @@ from typing import List
 import logging
 import tempfile
 import moviepy.editor as mp
+from PIL import Image
 
 router = APIRouter()
 
@@ -34,8 +35,9 @@ async def create_upload_file(request: Request,
 
     await ws_manager.send_text("Extracting audio 🎶")
     my_clip = mp.VideoFileClip(file_src)
-    audio_clip = mp.CompositeAudioClip([my_clip.audio])
-    #my_clip.audio.write_audiofile(f"{tempdir}/audio.mp3")
+
+    if my_clip.audio:
+        audio_clip = mp.CompositeAudioClip([my_clip.audio])
 
     bgr = form["bgr"]
     print(bgr.filename)
@@ -46,12 +48,25 @@ async def create_upload_file(request: Request,
         f.write(bgr_data)
 
     await ws_manager.send_text("Start Processing ⏳")
-    matte_service.process(file_src, file_bgr, f"{tempdir}/output")
 
+    #use image background
+    video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
+    video_target_bgr_img=f"{tempdir}/video_target_bgr.png"
+    ##clips = [mp.ImageClip("/app/tmp/bgr_white.png").set_duration(my_clip.duration)]
+    Image.new('RGB', my_clip.size, color = (73, 109, 137)).save(video_target_bgr_img)
+    clips = [mp.ImageClip(video_target_bgr_img).set_duration(my_clip.duration)]
+
+    concat_clip = mp.concatenate_videoclips(clips, method="compose")
+    concat_clip.write_videofile(video_target_bgr, fps=24)
+
+    matte_service.process(file_src, file_bgr, f"{tempdir}/output", video_target_bgr)
 
     await ws_manager.send_text("Appending audio 🎶")
     video_clip = mp.VideoFileClip(f"{tempdir}/output/com.mp4")
-    video_clip.audio = audio_clip
+
+    if my_clip.audio:
+        video_clip.audio = audio_clip
+
     video_clip.write_videofile(f"{tempdir}/output/ok.mp4")
 
     with open(f"{tempdir}/output/ok.mp4","rb") as f:

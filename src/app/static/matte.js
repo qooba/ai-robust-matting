@@ -150,7 +150,7 @@ Vue.component('train', {
     <div class="demo-card-square mdl-card mdl-cell mdl-cell--12-col">
         <div class="mdl-card__title mdl-card--expand">
             <!--<h2 class="mdl-card__title-text">AI Scissors</h2>-->
-            <img src="/static/logo.png" width="270px" />
+            <!--<img src="/static/logo.png" width="270px" />-->
         </div>
         <!--<div class="mdl-card__supporting-text">
             Upload image file.
@@ -160,14 +160,28 @@ Vue.component('train', {
         <div class="mdl-card__actions mdl-card--border">
             <!-- <dropzone :current-project="currentProject" ref="dropzone"></dropzone> -->
             <br/>
-            <div class="upload-btn-wrapper">
-                <button class="btn">Upload source</button>
-                <input type="file" ref="src" @change="srcChanged" name="myfile" />
+            <input type="file" ref="src" @change="srcChanged" class="mybtn" id="video-source" />
+            <label id="video-source-label" for="video-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              Upload source video
+            </label>
+
+            <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="video-source-label">
+                Upload main video source which you want to matte.
             </div>
-            <div class="upload-btn-wrapper">
-                <button class="btn">Upload background</button>
-                <input type="file" ref="bgr" @change="bgrChanged" name="myfile" />
+
+            <br/>
+            <br/>
+
+            <input type="file" ref="bgr" @change="bgrChanged" class="mybtn" id="background-image" />
+            <label id="background-image-label" for="background-image" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              Upload background image
+            </label>
+
+            <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="background-image-label">
+                Upload background image which will be removed from source video.
             </div>
+
+
             <br/>
             <br/>
 
@@ -178,10 +192,16 @@ Vue.component('train', {
             <br/>
             <br/>
 
-            <input class="btn" type="submit" v-on:click="submitFiles" >
+            <input id="submit" type="submit" class="mybtn" v-on:click="submitFiles" >
+            <label for="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              Submit
+            </label>
+           
+            
             <br/>
             <br/>
             <div id="logTxt" class="upload-btn-wrapper"></div>
+
         </div>
     </div>
     </div>
