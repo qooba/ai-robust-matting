@@ -2,7 +2,7 @@ import qdi
 from typing import Any, Callable, Optional, Sequence
 from functools import lru_cache, partial
 from fastapi import Depends
-from inference_video import VideoMatteService
+from inference_video import VideoMatteService, VideoService
 from services.ws import WebSocketManager
 
 class Bootstapper:
@@ -14,6 +14,7 @@ class Bootstapper:
 
         # services
         c.register_singleton(VideoMatteService)
+        c.register_singleton(VideoService)
         c.register_singleton(WebSocketManager)
 
         return c

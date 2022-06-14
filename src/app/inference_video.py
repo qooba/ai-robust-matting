@@ -6,6 +6,7 @@ Inference video: Extract matting on video.
 import cv2
 import torch
 import os
+import io
 import shutil
 from collections import namedtuple
 
@@ -22,6 +23,8 @@ from dataset import VideoDataset, ZipDataset
 from dataset import augmentation as A
 from model import MattingBase, MattingRefine
 from inference_utils import HomographicAlignment
+import moviepy.editor as mp
+from PIL import Image
 
 
 # --------------- Arguments ---------------
@@ -85,9 +88,17 @@ class ImageSequenceWriter:
 
 # --------------- Main ---------------
 
+
+
+
 class VideoMatteService:
 
-    def process(self, video_src: str, video_bgr: str, output_dir: str, video_target_bgr: str = None, device: str = 'cuda'):
+    def matting(self, video_src: str,
+                video_bgr: str,
+                output_dir: str,
+                video_target_bgr: str = None,
+                device: str = 'cuda',
+                output_types = ['com'] ):
 
         args = Args(
             model_type="mattingrefine",                         # 'mattingbase', 'mattingrefine'
@@ -105,7 +116,7 @@ class VideoMatteService:
             device=device,                                      # 'cpu', 'cuda'
             preprocess_alignment=False,
             output_dir=output_dir,
-            output_types=['com', 'pha', 'fgr', 'err', 'ref'],   # ['com', 'pha', 'fgr', 'err', 'ref']
+            output_types=output_types,                          # ['com', 'pha', 'fgr', 'err', 'ref']
             output_format="video"                               # 'video', 'image_sequences'
         )
 
@@ -215,3 +226,42 @@ class VideoMatteService:
                     err_writer.add_batch(F.interpolate(err, src.shape[2:], mode='bilinear', align_corners=False))
                 if 'ref' in args.output_types:
                     ref_writer.add_batch(F.interpolate(ref, src.shape[2:], mode='nearest'))
+
+class VideoService:
+
+    def __init__(self, video_matte: VideoMatteService):
+        self.video_matte = video_matte
+
+    def process(self, tempdir: str, file_src: str, file_bgr: str) -> io.BytesIO:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        my_clip = mp.VideoFileClip(file_src)
+
+        if my_clip.audio:
+            audio_clip = mp.CompositeAudioClip([my_clip.audio])
+
+        #use image background
+        video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
+        video_target_bgr_img=f"{tempdir}/video_target_bgr.png"
+        ##clips = [mp.ImageClip("/app/tmp/bgr_white.png").set_duration(my_clip.duration)]
+        Image.new('RGB', my_clip.size, color = (73, 109, 137)).save(video_target_bgr_img)
+        clips = [mp.ImageClip(video_target_bgr_img).set_duration(my_clip.duration)]
+
+        concat_clip = mp.concatenate_videoclips(clips, method="compose")
+        concat_clip.write_videofile(video_target_bgr, fps=24)
+
+        self.video_matte.matting(file_src, file_bgr, f"{tempdir}/output", video_target_bgr)
+
+        video_clip = mp.VideoFileClip(f"{tempdir}/output/com.mp4")
+
+        if my_clip.audio:
+            video_clip.audio = audio_clip
+
+        video_clip.write_videofile(f"{tempdir}/output/ok.mp4")
+
+        with open(f"{tempdir}/output/ok.mp4","rb") as f:
+            output_video = io.BytesIO(f.read())
+
+        return output_video
+
+
