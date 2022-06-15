@@ -1,52 +1,8 @@
-Vue.component("dropzone",{
-  template: `<div class='dropzone'></div>`,
-  props: {
-    currentProject: null,
-  },
-  data() {
-    return {
-      uploadDropzone: null,
-      modelName: Date.now().toString()
-    };
-  },
-  methods: {
-      reload(){
-      }
-  },
-  mounted(){
-    this.uploadDropzone= new Dropzone(this.$el, {
-        url:"/api/matte/"+this.modelName, 
-        paramName: "files",
-        method: "post",
-        uploadMultiple: true,
-        timeout: 36000000,
-        responseType: 'arraybuffer',
-        success: function(file, response){
-            console.log(file)
-            var imageBlob = response;
-            var imageBytes = btoa(
-              new Uint8Array(response)
-                .reduce((data, byte) => data + String.fromCharCode(byte), '')
-            );
-
-                var outputImg = document.getElementById('output');
-                outputImg.src = 'data:image/png;base64,'+imageBytes;
-
-                var inputImg = document.getElementById('input');
-                inputImg.src = file.dataURL;
-
-                //var blob = new Blob(new Uint8Array(response), {type: "image/png"});
-                //saveAs(blob, 'out.png');
-
-
-        }
-    });
-  }
-})
 
 Vue.component('train', {
   data: function () {
     return {
+      targetType: "green",
       show: true,
       snackbarContainer: document.querySelector('#toast'),
       packages: null,
@@ -81,6 +37,11 @@ Vue.component('train', {
         document.getElementById('bgrTxt').textContent="Background image: "+file.name+" ("+file.size+")";
 
     },
+    targetChange(event){
+        console.log(event);
+        document.getElementById('srcTxt')
+
+    },
     handleEvent(message) {
         console.log(message.data);
         document.getElementById('logTxt').textContent = message.data;
@@ -110,34 +71,6 @@ Vue.component('train', {
     }
   },
   created(){
-      //this.intervalId = setInterval(this.train_info, 5000);
-      //  axios.get("/static/woman.jpg",{
-      //        responseType: 'arraybuffer'
-      //    }).then(response => {
-      //        var blob=new Blob([response.data])
-      //        console.log(blob);
-      //        var formData = new FormData();
-      //        formData.append("file", blob);
-      //        axios.post('/api/scissors/333', formData, {
-      //            headers: {
-      //              'Content-Type': 'multipart/form-data'
-      //            }, responseType: 'arraybuffer'
-
-      //        }).then(res => {
-      //            console.log(res);
-
-      //        var imageBlob = res.data;
-      //        var imageBytes = btoa(
-      //          new Uint8Array(res.data)
-      //            .reduce((data, byte) => data + String.fromCharCode(byte), '')
-      //        );
-
-      //            var outputImg = document.getElementById('output');
-      //            outputImg.src = 'data:image/png;base64,'+imageBytes;
-
-      //        });
-	  //    });
-     
   },
   updated(){
       if(this.$refs.dropzone !== undefined){
@@ -158,29 +91,29 @@ Vue.component('train', {
 
 
         <div class="mdl-card__actions mdl-card--border">
-            <!-- <dropzone :current-project="currentProject" ref="dropzone"></dropzone> -->
-            <br/>
-            <input type="file" ref="src" @change="srcChanged" class="mybtn" id="video-source" />
-            <label id="video-source-label" for="video-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-              Upload source video
-            </label>
+            <h4>INPUT:</h4>
+            <center>
+                <input type="file" ref="src" @change="srcChanged" class="mybtn" id="video-source" />
+                <label id="video-source-label" for="video-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+                  Upload source video
+                </label>
 
-            <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="video-source-label">
-                Upload main video source which you want to matte.
-            </div>
+                <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="video-source-label">
+                    Upload main video source which you want to matte.
+                </div>
 
-            <br/>
-            <br/>
+                <br/>
+                <br/>
 
-            <input type="file" ref="bgr" @change="bgrChanged" class="mybtn" id="background-image" />
-            <label id="background-image-label" for="background-image" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-              Upload background image
-            </label>
+                <input type="file" ref="bgr" @change="bgrChanged" class="mybtn" id="background-image" />
+                <label id="background-image-label" for="background-image" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+                  Upload background image
+                </label>
 
-            <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="background-image-label">
-                Upload background image which will be removed from source video.
-            </div>
-
+                <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="background-image-label">
+                    Upload background image which will be removed from source video.
+                </div>
+            </center>
 
             <br/>
             <br/>
@@ -192,6 +125,52 @@ Vue.component('train', {
             <br/>
             <br/>
 
+            <hr/>
+
+            <h4>BACKGROUND TARGET:</h4>
+
+            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
+              <input type="radio" id="option-1" v-model="targetType" class="mdl-radio__button" name="options" value="green" checked>
+              <span class="mdl-radio__label">Green screen</span>
+            </label>
+            <br/>
+            <br/>
+            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-2">
+              <input type="radio" id="option-2" v-model="targetType" class="mdl-radio__button" name="options" value="color">
+              <span class="mdl-radio__label">Color background:</span>
+              &nbsp;&nbsp;&nbsp;&nbsp;
+              <input type="color" id="colorpicker" value="#ffffff">
+            </label>
+            <br/>
+            <br/>
+            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-3">
+              <input type="radio" id="option-3" v-model="targetType" class="mdl-radio__button" name="options" value="image">
+              <span class="mdl-radio__label">Background image:</span>
+                <input type="file" ref="target_bgr_img" class="mybtn" id="target-image-source" />
+                <label id="target-image-label" for="target-image-source" class="mdl-button mdl-js-button mdl-button--primary">
+                  Target image
+                </label>
+
+            </label>
+            <br/>
+            <br/>
+            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-4">
+              <input type="radio" id="option-4" v-model="targetType" class="mdl-radio__button" name="options" value="video">
+              <span class="mdl-radio__label">Background video:</span>
+                &nbsp;
+                <input type="file" ref="target_bgr_video" class="mybtn" id="target-video-source" />
+                <label id="target-video-label" for="target-video-source" class="mdl-button mdl-js-button mdl-button--primary">
+                  Target video
+                </label>
+
+            </label>
+<br/>
+    <br/>
+    <div class="mt-3">Selected: <strong>{{ targetType }}</strong></div
+
+            <br/>
+
+            <hr/>
             <input id="submit" type="submit" class="mybtn" v-on:click="submitFiles" >
             <label for="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
               Submit

@@ -281,3 +281,7 @@ li.clickable:hover {
 }
 
 .mybtn { display: none }
+
+.mdl-card__actions {
+  padding: 20px !important;
+}
