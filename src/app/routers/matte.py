@@ -4,6 +4,7 @@ from starlette.responses import StreamingResponse
 from inference_video import VideoService
 from services.ws import WebSocketManager
 import io
+import shutil
 from typing import List
 import logging
 import tempfile
@@ -31,6 +32,8 @@ async def create_upload_file(request: Request,
     file_src = f'{tempdir}/{src.filename}'
     with open(file_src, "wb") as f:
         f.write(src_data)
+        del src_data
+        del src
 
     bgr = form["bgr"]
     bgr_data = await bgr.read()
@@ -38,11 +41,40 @@ async def create_upload_file(request: Request,
     file_bgr = f'{tempdir}/{bgr.filename}'
     with open(file_bgr, "wb") as f:
         f.write(bgr_data)
+        del bgr
+        del bgr_data
+
+    target_type = form["targetType"]
+    if target_type == "green":
+        target = None
+    else:
+        target = form["target"]
+
+    if target_type in ("image", "video"):
+        target_data = await target.read()
+        target_file = f'{tempdir}/{target.filename}'
+        with open(target_file, "wb") as f:
+            f.write(target_data)
+            target = target_file
+            del target_data
+
+    fx_list = form["fx"]
+    print(fx_list)
+
+    fx = {}
+
+    if "subclip" in fx_list:
+        subclip_start = form["subclipStart"]
+        subclip_end = form["subclipEnd"]
+        fx["subclip"]=(subclip_start, subclip_end)
+        print(subclip_start, subclip_end)
 
     await ws_manager.send_text("Start Processing ⏳")
 
-    output_video = video_service.process(tempdir, file_src, file_bgr)
+    output_video = video_service.process(tempdir, file_src, file_bgr, target_type, target, fx)
 
     await ws_manager.send_text("Processing Finished ✅")
+
+    shutil.rmtree(tempdir)
 
     return StreamingResponse(output_video, media_type="video/mp4")

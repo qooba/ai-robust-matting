@@ -24,7 +24,8 @@ from dataset import augmentation as A
 from model import MattingBase, MattingRefine
 from inference_utils import HomographicAlignment
 import moviepy.editor as mp
-from PIL import Image
+from moviepy.video.fx.all import crop
+from PIL import Image, ImageColor
 
 
 # --------------- Arguments ---------------
@@ -232,23 +233,81 @@ class VideoService:
     def __init__(self, video_matte: VideoMatteService):
         self.video_matte = video_matte
 
-    def process(self, tempdir: str, file_src: str, file_bgr: str) -> io.BytesIO:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        my_clip = mp.VideoFileClip(file_src)
-
-        if my_clip.audio:
-            audio_clip = mp.CompositeAudioClip([my_clip.audio])
-
+    def _generate_target_color(self, tempdir, size, duration, target_color):
         #use image background
         video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
         video_target_bgr_img=f"{tempdir}/video_target_bgr.png"
         ##clips = [mp.ImageClip("/app/tmp/bgr_white.png").set_duration(my_clip.duration)]
-        Image.new('RGB', my_clip.size, color = (73, 109, 137)).save(video_target_bgr_img)
-        clips = [mp.ImageClip(video_target_bgr_img).set_duration(my_clip.duration)]
+        Image.new('RGB', size, color = ImageColor.getrgb(target_color)).save(video_target_bgr_img)
+        clips = [mp.ImageClip(video_target_bgr_img).set_duration(duration)]
 
         concat_clip = mp.concatenate_videoclips(clips, method="compose")
         concat_clip.write_videofile(video_target_bgr, fps=24)
+        return video_target_bgr
+
+    def _generate_target_image(self, tempdir, size, duration, target_image):
+        video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
+        video_target_bgr_img=f"{tempdir}/video_target_bgr.png"
+
+        im = Image.open(target_image)
+        width, height = im.size
+
+        left = (width - size[0])/2
+        top = (height - size[1])/2
+        right = (width + size[0])/2
+        bottom = (height + size[1])/2
+
+        im.crop((left, top, right, bottom)).save(video_target_bgr_img)
+        clips = [mp.ImageClip(video_target_bgr_img).set_duration(duration)]
+
+        concat_clip = mp.concatenate_videoclips(clips, method="compose")
+        concat_clip.write_videofile(video_target_bgr, fps=24)
+        return video_target_bgr
+
+    def _generate_target_video(self, tempdir, size, duration, target_video):
+        clip = mp.VideoFileClip(target_video)
+        video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
+
+        width, height = clip.size
+
+        left = (width - size[0])/2
+        top = (height - size[1])/2
+        right = (width + size[0])/2
+        bottom = (height + size[1])/2
+
+        crop(clip, x1=left, y1=top, x2=right, y2=bottom).write_videofile(video_target_bgr)
+        return video_target_bgr
+
+    def process(self,
+                tempdir: str,
+                file_src: str,
+                file_bgr: str,
+                target_type: str,
+                target: str = None,
+                fx: dict = {},
+            ) -> io.BytesIO:
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        my_clip = mp.VideoFileClip(file_src)
+
+        if "subclip" in fx.keys():
+            my_clip = my_clip.subclip(*fx["subclip"])
+
+        if fx.keys():
+            my_clip.write_videofile(file_src)
+
+        if my_clip.audio:
+            audio_clip = mp.CompositeAudioClip([my_clip.audio])
+
+        video_target_bgr = None
+
+        if target_type == "color":
+            video_target_bgr = self._generate_target_color(tempdir, my_clip.size, my_clip.duration, target)
+        elif target_type == "image":
+            video_target_bgr = self._generate_target_image(tempdir, my_clip.size, my_clip.duration, target)
+        elif target_type == "video":
+            video_target_bgr = self._generate_target_video(tempdir, my_clip.size, my_clip.duration, target)
 
         self.video_matte.matting(file_src, file_bgr, f"{tempdir}/output", video_target_bgr)
 

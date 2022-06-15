@@ -6,7 +6,10 @@ Vue.component('train', {
       show: true,
       snackbarContainer: document.querySelector('#toast'),
       packages: null,
-      intervalId: null
+      intervalId: null,
+      fx: [],
+      subclipStart: null,
+      subclipEnd: null
     }
   },
   props: {
@@ -54,6 +57,25 @@ Vue.component('train', {
 
         formData.append('src', this.$refs.src.files[0]);
         formData.append('bgr', this.$refs.bgr.files[0]);
+        formData.append('targetType', this.targetType);
+
+        if(this.targetType === "color"){
+            console.log(this.$refs.target_color.value);
+            formData.append('target', this.$refs.target_color.value);
+        }
+        else if(this.targetType === "image"){
+            formData.append('target', this.$refs.target_bgr_img.files[0]);
+        }
+        else if(this.targetType === "video"){
+            formData.append('target', this.$refs.target_bgr_video.files[0]);
+        }
+
+
+        formData.append('fx', this.fx);
+        if(this.fx.includes("subclip")) {
+            formData.append('subclipStart', this.subclipStart);
+            formData.append('subclipEnd', this.subclipEnd);
+        }
 
         axios.post('/api/matte', formData, {
             headers: {
@@ -91,7 +113,7 @@ Vue.component('train', {
 
 
         <div class="mdl-card__actions mdl-card--border">
-            <h4>INPUT:</h4>
+            <h5>INPUT:</h5>
             <center>
                 <input type="file" ref="src" @change="srcChanged" class="mybtn" id="video-source" />
                 <label id="video-source-label" for="video-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
@@ -127,7 +149,8 @@ Vue.component('train', {
 
             <hr/>
 
-            <h4>BACKGROUND TARGET:</h4>
+            <h5>BACKGROUND TARGET:</h5>
+            <br/>
 
             <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="option-1">
               <input type="radio" id="option-1" v-model="targetType" class="mdl-radio__button" name="options" value="green" checked>
@@ -139,7 +162,7 @@ Vue.component('train', {
               <input type="radio" id="option-2" v-model="targetType" class="mdl-radio__button" name="options" value="color">
               <span class="mdl-radio__label">Color background:</span>
               &nbsp;&nbsp;&nbsp;&nbsp;
-              <input type="color" id="colorpicker" value="#ffffff">
+              <input type="color" id="colorpicker" ref="target_color" value="#ffffff">
             </label>
             <br/>
             <br/>
@@ -164,11 +187,33 @@ Vue.component('train', {
                 </label>
 
             </label>
-<br/>
-    <br/>
-    <div class="mt-3">Selected: <strong>{{ targetType }}</strong></div
-
             <br/>
+            <br/>
+
+<!--
+            <hr/>
+            <h5>TRANSFORM:</h5>
+
+            <input type="checkbox" id="subclip" value="subclip" v-model="fx" class="mdl-checkbox__input">
+            <label for="subclip">Subclip: </label>
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                <input class="mdl-textfield__input" v-model="subclipStart" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="subclip_start">
+                <label class="mdl-textfield__label" for="subclip_start">start (seconds)...</label>
+                <span class="mdl-textfield__error">Input is not a number!</span>
+            </div>
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                <input class="mdl-textfield__input" v-model="subclipEnd" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="subclip_end">
+                <label class="mdl-textfield__label" for="subclip_end">end (seconds)...</label>
+                <span class="mdl-textfield__error">Input is not a number!</span>
+            </div>
+            <br/>
+            <input type="checkbox" id="resize" value="resize" v-model="fx" class="mdl-checkbox__input">
+            <label for="subclip">Resize: </label>
+            <br/>
+            <input type="checkbox" id="corp" value="crop" v-model="fx" class="mdl-checkbox__input">
+            <label for="subclip">Crop: </label>
+
+-->
 
             <hr/>
             <input id="submit" type="submit" class="mybtn" v-on:click="submitFiles" >
