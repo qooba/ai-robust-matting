@@ -24,7 +24,7 @@ from dataset import augmentation as A
 from model import MattingBase, MattingRefine
 from inference_utils import HomographicAlignment
 import moviepy.editor as mp
-from moviepy.video.fx.all import crop
+from moviepy.video.fx.all import crop, resize
 from PIL import Image, ImageColor
 
 
@@ -245,19 +245,38 @@ class VideoService:
         concat_clip.write_videofile(video_target_bgr, fps=24)
         return video_target_bgr
 
+    def _find_sizes(self, source_size, target_size):
+
+        s_width, s_height = source_size
+        t_width, t_height = target_size
+
+        new_width = t_width
+        new_height = int(new_width * s_height/s_width)
+        left=0
+        right=t_width
+        top = (new_height - t_height)/2
+        bottom = top+t_height
+
+        if new_height < t_height:
+            new_height = t_height
+            new_width = int(new_height * s_width/s_height)
+            top=0
+            bottom=t_height
+            left = (new_width - t_width)/2
+            right = left+t_width
+
+        return (new_width, new_height), (left, top, right, bottom)
+
     def _generate_target_image(self, tempdir, size, duration, target_image):
         video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
         video_target_bgr_img=f"{tempdir}/video_target_bgr.png"
 
         im = Image.open(target_image)
-        width, height = im.size
 
-        left = (width - size[0])/2
-        top = (height - size[1])/2
-        right = (width + size[0])/2
-        bottom = (height + size[1])/2
+        new_size, crop_size = self._find_sizes(im.size, size)
 
-        im.crop((left, top, right, bottom)).save(video_target_bgr_img)
+        im = im.resize(new_size, Image.ANTIALIAS)
+        im.crop(crop_size).save(video_target_bgr_img)
         clips = [mp.ImageClip(video_target_bgr_img).set_duration(duration)]
 
         concat_clip = mp.concatenate_videoclips(clips, method="compose")
@@ -268,14 +287,8 @@ class VideoService:
         clip = mp.VideoFileClip(target_video)
         video_target_bgr=f"{tempdir}/video_target_bgr.mp4"
 
-        width, height = clip.size
-
-        left = (width - size[0])/2
-        top = (height - size[1])/2
-        right = (width + size[0])/2
-        bottom = (height + size[1])/2
-
-        crop(clip, x1=left, y1=top, x2=right, y2=bottom).write_videofile(video_target_bgr)
+        new_size, crop_size = self._find_sizes(clip.size, size)
+        crop(resize(clip, new_size), x1=crop_size[0], y1=crop_size[1], x2=crop_size[2], y2=crop_size[3]).write_videofile(video_target_bgr)
         return video_target_bgr
 
     def process(self,
