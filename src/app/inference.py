@@ -239,7 +239,7 @@ class VideoService:
                 target_type: str,
                 target: str = None,
                 fx: dict = {},
-                variant: str = 'mobilenetv3', #'mobilenetv3', 'resnet50'
+                variant: str = 'resnet50', #'mobilenetv3', 'resnet50'
             ) -> io.BytesIO:
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -297,11 +297,12 @@ class VideoService:
         )
 
         if target_type != 'green':
-            mask_clip = VideoFileClip(output_alpha, ismask=True)
-            background_clip = VideoFileClip(video_target_bgr)
+            mask_clip = mp.VideoFileClip(output_alpha)
+            mask_clip = mask_clip.to_mask()
+            background_clip = mp.VideoFileClip(video_target_bgr)
             video_clip = mp.VideoFileClip(file_src)
-            video_clip.set_mask(mask_clip)
-            ok_clip = mp.mask_clip([
+            video_clip = video_clip.set_mask(mask_clip)
+            ok_clip = mp.CompositeVideoClip([
                 background_clip,
                 video_clip
             ])
