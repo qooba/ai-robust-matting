@@ -1,48 +1,45 @@
+import torch
 from torch import nn
 from torchvision.models.resnet import ResNet, Bottleneck
 
-
-class ResNetEncoder(ResNet):
-    """
-    ResNetEncoder inherits from torchvision's official ResNet. It is modified to
-    use dilation on the last block to maintain output stride 16, and deleted the
-    global average pooling layer and the fully connected layer that was originally
-    used for classification. The forward method  additionally returns the feature
-    maps at all resolutions for decoder's use.
-    """
-    
-    layers = {
-        'resnet50':  [3, 4, 6, 3],
-        'resnet101': [3, 4, 23, 3],
-    }
-    
-    def __init__(self, in_channels, variant='resnet101', norm_layer=None):
+class ResNet50Encoder(ResNet):
+    def __init__(self, pretrained: bool = False):
         super().__init__(
             block=Bottleneck,
-            layers=self.layers[variant],
+            layers=[3, 4, 6, 3],
             replace_stride_with_dilation=[False, False, True],
-            norm_layer=norm_layer)
+            norm_layer=None)
         
-        # Replace first conv layer if in_channels doesn't match.
-        if in_channels != 3:
-            self.conv1 = nn.Conv2d(in_channels, 64, 7, 2, 3, bias=False)
-            
-        # Delete fully-connected layer
+        if pretrained:
+            self.load_state_dict(torch.hub.load_state_dict_from_url(
+                'https://download.pytorch.org/models/resnet50-0676ba61.pth'))
+        
         del self.avgpool
         del self.fc
-    
-    def forward(self, x):
-        x0 = x  # 1/1
+        
+    def forward_single_frame(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x1 = x  # 1/2
+        f1 = x  # 1/2
         x = self.maxpool(x)
         x = self.layer1(x)
-        x2 = x  # 1/4
+        f2 = x  # 1/4
         x = self.layer2(x)
-        x3 = x  # 1/8
+        f3 = x  # 1/8
         x = self.layer3(x)
         x = self.layer4(x)
-        x4 = x  # 1/16
-        return x4, x3, x2, x1, x0
+        f4 = x  # 1/16
+        return [f1, f2, f3, f4]
+    
+    def forward_time_series(self, x):
+        B, T = x.shape[:2]
+        features = self.forward_single_frame(x.flatten(0, 1))
+        features = [f.unflatten(0, (B, T)) for f in features]
+        return features
+    
+    def forward(self, x):
+        if x.ndim == 5:
+            return self.forward_time_series(x)
+        else:
+            return self.forward_single_frame(x)

@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime
+FROM pytorch/pytorch:1.9.0-cuda11.1-cudnn8-runtime
 RUN pip install gdown -q
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt install git vim python3-opencv -yq

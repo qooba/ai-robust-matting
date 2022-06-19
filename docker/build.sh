@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cp -r ../src/app app
-docker build -t qooba/aimatting:dev -f Dockerfile.dev .
+docker build -t qooba/aimatting:robust-dev -f Dockerfile.dev .
 rm -r app

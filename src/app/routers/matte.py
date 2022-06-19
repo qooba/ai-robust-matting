@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, Request, WebSocket
 from common import Injects
 from starlette.responses import StreamingResponse
-from inference_video import VideoService
+from inference import VideoService
 from services.ws import WebSocketManager
 import io
 import shutil
@@ -35,15 +35,6 @@ async def create_upload_file(request: Request,
         del src_data
         del src
 
-    bgr = form["bgr"]
-    bgr_data = await bgr.read()
-
-    file_bgr = f'{tempdir}/{bgr.filename}'
-    with open(file_bgr, "wb") as f:
-        f.write(bgr_data)
-        del bgr
-        del bgr_data
-
     target_type = form["targetType"]
     if target_type == "green":
         target = None
@@ -71,10 +62,10 @@ async def create_upload_file(request: Request,
 
     await ws_manager.send_text("Start Processing ⏳")
 
-    output_video = video_service.process(tempdir, file_src, file_bgr, target_type, target, fx)
+    output_video = video_service.process(tempdir, file_src, target_type, target, fx)
 
     await ws_manager.send_text("Processing Finished ✅")
 
-    shutil.rmtree(tempdir)
+    #shutil.rmtree(tempdir)
 
     return StreamingResponse(output_video, media_type="video/mp4")

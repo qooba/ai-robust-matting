@@ -16,29 +16,9 @@ Vue.component('train', {
     currentProject: null
   },
   methods: {
-    train_info(){
-	    axios.get("/api/training").then(response => {
-            this.packages=response.data;
-	    });
-    },
-    download(modelName) {
-        console.log(modelName);
-	    axios.get("/api/training/"+modelName,{
-            responseType: 'arraybuffer'
-        }).then(response => {
-            var blob=new Blob([response.data])
-            console.log(blob);
-            saveAs(blob,'trt_graph.pb');
-	    });
-    },
     srcChanged(event){
         var file = event.target.files[0]
         document.getElementById('srcTxt').textContent="Source video: "+file.name+" ("+file.size+")";
-    },
-    bgrChanged(event){
-        var file = event.target.files[0]
-        document.getElementById('bgrTxt').textContent="Background image: "+file.name+" ("+file.size+")";
-
     },
     targetChange(event){
         console.log(event);
@@ -56,7 +36,6 @@ Vue.component('train', {
         let formData = new FormData();
 
         formData.append('src', this.$refs.src.files[0]);
-        formData.append('bgr', this.$refs.bgr.files[0]);
         formData.append('targetType', this.targetType);
 
         if(this.targetType === "color"){
@@ -126,23 +105,12 @@ Vue.component('train', {
 
                 <br/>
                 <br/>
-
-                <input type="file" ref="bgr" @change="bgrChanged" class="mybtn" id="background-image" />
-                <label id="background-image-label" for="background-image" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-                  Upload background image
-                </label>
-
-                <div class="mdl-tooltip mdl-tooltip--right mdl-tooltip--large" data-mdl-for="background-image-label">
-                    Upload background image which will be removed from source video.
-                </div>
             </center>
 
             <br/>
             <br/>
 
             <div id="srcTxt" class="upload-btn-wrapper">Sorce video:</div>
-            <br/>
-            <div id="bgrTxt" class="upload-btn-wrapper">Background image:</div>
             
             <br/>
             <br/>
