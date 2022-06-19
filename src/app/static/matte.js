@@ -83,8 +83,8 @@ Vue.component('train', {
   <div class="mdl-grid demo-content">
     <div class="demo-card-square mdl-card mdl-cell mdl-cell--12-col">
         <div class="mdl-card__title mdl-card--expand">
-            <!--<h2 class="mdl-card__title-text">AI Scissors</h2>-->
-            <!--<img src="/static/logo.png" width="270px" />-->
+            <img src="/static/logo_aimatte.png" width="50px" />
+            <h2 class="mdl-card__title-text">AI ROBUST MATTE</h2>
         </div>
         <!--<div class="mdl-card__supporting-text">
             Upload image file.
