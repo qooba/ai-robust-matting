@@ -1,8 +1,8 @@
-Background Matting
+#Background Robust Matting
+
+Code partially forked from [https://peterl1n.github.io/RobustVideoMatting/#/](https://peterl1n.github.io/RobustVideoMatting/#/)
 
 # References & Thanks
-
-[https://github.com/PeterL1n/BackgroundMattingV2](https://github.com/PeterL1n/BackgroundMattingV2)
 
 [https://peterl1n.github.io/RobustVideoMatting/#/](https://peterl1n.github.io/RobustVideoMatting/#/)
 
