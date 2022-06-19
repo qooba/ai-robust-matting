@@ -11,7 +11,7 @@ build-docker-dev: ## builds dev docker image.
 
 build-docker: ## builds docker image.
 	cd docker && \
-	docker build -t qooba/aimatting:robust -f Dockerfile .
+	docker build --no-cache -t qooba/aimatting:robust -f Dockerfile .
 
 run-dev: ## run dev mode
 	docker run -it --gpus all -p 8000:8000 --rm --name aimatting -v $(pwd)/src/app:/app qooba/aimatting:dev /bin/bash
