@@ -9,7 +9,8 @@ Vue.component('train', {
       intervalId: null,
       fx: [],
       subclipStart: null,
-      subclipEnd: null
+      subclipEnd: null,
+      loader: false
     }
   },
   props: {
@@ -55,7 +56,8 @@ Vue.component('train', {
             formData.append('subclipStart', this.subclipStart);
             formData.append('subclipEnd', this.subclipEnd);
         }
-
+        
+        this.loader = true;
         axios.post('/api/matte', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -64,7 +66,7 @@ Vue.component('train', {
           }
         ).then(response => {
             var blob=new Blob([response.data])
-            console.log(blob);
+            this.loader = false;
             saveAs(blob,'output.mp4');
 	    })
         .catch(function(){
@@ -188,6 +190,7 @@ Vue.component('train', {
             <label for="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
               Submit
             </label>
+            <div id="p2" style="width: 97px;" class="mdl-progress mdl-js-progress mdl-progress__indeterminate" v-show="loader"></div>
            
             
             <br/>
